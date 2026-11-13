@@ -13,6 +13,8 @@ import (
 )
 
 type NotifyRule struct {
+	ReceiverMode string  `json:"receiver_mode" gorm:"size:20;default:original"`
+	DutyGroupID  int64   `json:"duty_group_id" gorm:"default:0"`
 	ID           int64   `json:"id" gorm:"primarykey"`
 	Name         string  `json:"name"`                                  // 名称
 	Description  string  `json:"description"`                           // 备注
@@ -42,10 +44,12 @@ func (r *NotifyRule) TableName() string {
 }
 
 type NotifyConfig struct {
-	ChannelID  int64                  `json:"channel_id"`  // 通知媒介(如：阿里云短信)
-	TemplateID int64                  `json:"template_id"` // 通知模板
-	Params     map[string]interface{} `json:"params"`      // 通知参数
-	Type       string                 `json:"type"`
+	DutyUserID  int64                  `json:"-" gorm:"-"`
+	DutyGroupID int64                  `json:"-" gorm:"-"`
+	ChannelID   int64                  `json:"channel_id"`  // 通知媒介(如：阿里云短信)
+	TemplateID  int64                  `json:"template_id"` // 通知模板
+	Params      map[string]interface{} `json:"params"`      // 通知参数
+	Type        string                 `json:"type"`
 
 	Severities []int        `json:"severities"`  // 适用级别(一级告警、二级告警、三级告警)
 	TimeRanges []TimeRanges `json:"time_ranges"` // 适用时段
@@ -119,6 +123,12 @@ var NotifyRuleCache struct {
 
 // 创建 NotifyRule
 func CreateNotifyRule(c *ctx.Context, rule *NotifyRule) error {
+	if err := rule.Verify(); err != nil {
+		return err
+	}
+	if err := rule.VerifyDuty(c); err != nil {
+		return err
+	}
 	return DB(c).Create(rule).Error
 }
 
@@ -242,6 +252,9 @@ func (r *NotifyRule) Update(ctx *ctx.Context, ref NotifyRule) error {
 		return err
 	}
 
+	if err := ref.VerifyDuty(ctx); err != nil {
+		return err
+	}
 	db := DB(ctx).Model(r).Select("*")
 	if ref.ExtraConfig == nil {
 		db = db.Omit("ExtraConfig")

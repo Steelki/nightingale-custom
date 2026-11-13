@@ -90,3 +90,10 @@ n9e.sql
 /aichat-cli
 /a2a-cli
 evallog/
+
+# Local credentials and deployment backups
+.env
+.env.*
+*.key
+*.pem
+/backups/

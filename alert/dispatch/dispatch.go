@@ -223,7 +223,14 @@ func (e *Dispatch) HandleEventWithNotifyRule(eventOrigin *models.AlertCurEvent) 
 					continue
 				}
 
-				go SendByNotifyRule(e.ctx, e.userCache, e.userGroupCache, e.notifyChannelCache, e.configCvalCache, []*models.AlertCurEvent{eventCopy}, notifyRuleId, &notifyRule.NotifyConfigs[i], notifyChannel, messageTemplate)
+				configCopy := notifyRule.NotifyConfigs[i]
+				if notifyRule.ReceiverMode == "duty_group" {
+					configCopy.DutyGroupID = notifyRule.DutyGroupID
+					if configCopy.DutyGroupID <= 0 {
+						continue
+					}
+				}
+				go SendByNotifyRule(e.ctx, e.userCache, e.userGroupCache, e.notifyChannelCache, e.configCvalCache, []*models.AlertCurEvent{eventCopy}, notifyRuleId, &configCopy, notifyChannel, messageTemplate)
 			}
 		}
 	}
@@ -577,6 +584,15 @@ func BuildNotifyContext(nctx *ctx.Context, userCache *memsto.UserCacheType, user
 	notifyChannel *models.NotifyChannelConfig, tplContent map[string]interface{},
 	httpClient *http.Client, siteUrl string) (*NotifyContext, error) {
 
+	var dutySendtos []string
+	var dutyProvider provider.NotifyChannelProvider
+	if notifyConfig.DutyGroupID > 0 {
+		var err error
+		notifyChannel, notifyConfig, dutySendtos, dutyProvider, err = prepareDutyContext(nctx, notifyConfig.DutyGroupID, notifyChannel, notifyConfig, events...)
+		if err != nil {
+			return nil, err
+		}
+	}
 	var contactKey string
 	if notifyChannel.ParamConfig != nil && notifyChannel.ParamConfig.UserInfo != nil {
 		contactKey = notifyChannel.ParamConfig.UserInfo.ContactKey
@@ -588,6 +604,13 @@ func BuildNotifyContext(nctx *ctx.Context, userCache *memsto.UserCacheType, user
 	if !ok {
 		return nil, fmt.Errorf("unknown channel ident(%s), request_type(%s)",
 			notifyChannel.Ident, notifyChannel.RequestType)
+	}
+
+	if notifyConfig.DutyGroupID > 0 {
+		sendtos = dutySendtos
+		if dutyProvider != nil {
+			p = dutyProvider
+		}
 	}
 
 	// TODO(dingtalkapp): 钉钉应用本次不上线，按 AppKey 预取群 RobotCode 的分支先注释；上线时恢复整段。
@@ -631,6 +654,12 @@ func SendNotifyRuleMessage(ctx *ctx.Context, userCache *memsto.UserCacheType, us
 		return
 	}
 
+	if claimed, err := models.ResponseIsClaimed(ctx.DB, events[0]); err != nil {
+		logger.Errorf("read response before send: %v", err)
+		return
+	} else if claimed {
+		return
+	}
 	siteInfo := configCvalCache.GetSiteInfo()
 	tplContent := make(map[string]interface{})
 	// flashduty / pagerduty 直接从 event 字段构造 payload，不需要模板，
@@ -644,6 +673,7 @@ func SendNotifyRuleMessage(ctx *ctx.Context, userCache *memsto.UserCacheType, us
 		notifyConfig, notifyChannel, tplContent, notifyChannelCache.GetHttpClient(notifyChannel.ID), siteInfo.SiteUrl)
 	if err != nil {
 		logger.Warningf("%v", err)
+		sender.NotifyRecord(ctx, events, notifyRuleId, notifyChannel.Name, "", "", err)
 		return
 	}
 
@@ -663,22 +693,9 @@ func SendNotifyRuleMessage(ctx *ctx.Context, userCache *memsto.UserCacheType, us
 				errors.New("failed to enqueue notify task, queue is full"))
 		}
 	case "smtp":
-		// SMTP 走邮件连接池
-		nc.Request.SmtpChan = notifyChannelCache.GetSmtpClient(notifyChannel.ID)
-		result := nc.Provider.Notify(ctx.Ctx, nc.Request)
-		if result == nil {
-			sender.NotifyRecord(ctx, events, notifyRuleId, notifyChannel.Name,
-				getSendTarget(nc.Request.CustomParams, nc.Request.Sendtos), "",
-				errors.New("smtp provider returned nil result"))
-			return
-		}
-		if result.Err != nil {
-			target := result.Target
-			if target == "" {
-				target = getSendTarget(nc.Request.CustomParams, nc.Request.Sendtos)
-			}
-			sender.NotifyRecord(ctx, events, notifyRuleId, notifyChannel.Name, target, result.Response, result.Err)
-		}
+		// A bounded send reports connection failures as well as DATA failures to fallback.
+		err := provider.SendDutyEmail(ctx.Ctx, notifyChannel, nc.Request.Sendtos, tplContent)
+		sender.NotifyRecord(ctx, events, notifyRuleId, notifyChannel.Name, strings.Join(nc.Request.Sendtos, ","), "", err)
 	default:
 		// flashduty/pagerduty/script 等直接调用
 		result := nc.Provider.Notify(ctx.Ctx, nc.Request)
@@ -695,6 +712,12 @@ func NeedBatchContacts(requestConfig *models.HTTPRequestConfig) bool {
 // event: 告警/恢复事件
 // isSubscribe: 告警事件是否由subscribe的配置产生
 func (e *Dispatch) HandleEventNotify(event *models.AlertCurEvent, isSubscribe bool) {
+	if claimed, err := models.ResponseIsClaimed(e.ctx.DB, event); err != nil {
+		logger.Errorf("read event response: %v", err)
+		return
+	} else if claimed {
+		return
+	}
 	go e.HandleEventWithNotifyRule(event)
 	if event.IsRecovered && event.NotifyRecovered == 0 {
 		return

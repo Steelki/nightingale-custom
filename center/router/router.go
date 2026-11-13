@@ -279,6 +279,7 @@ func (rt *Router) Config(r *gin.Engine) {
 
 	pagesPrefix := "/api/n9e"
 	pages := r.Group(pagesPrefix)
+	rt.registerDutyRoutes(pages)
 	{
 
 		pages.DELETE("/datasource/series", rt.auth(), rt.admin(), rt.deleteDatasourceSeries)

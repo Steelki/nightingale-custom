@@ -161,6 +161,13 @@ func NotifyRecord(ctx *ctx.Context, evts []*models.AlertCurEvent, notifyRuleID i
 		return
 	}
 
+	if err != nil && ctx.DB != nil {
+		for _, evt := range evts {
+			if e := models.EnqueueNotificationFailure(ctx.DB, evt, notifyRuleID, channel, target, err); e != nil {
+				logger.Errorf("persist failure fallback: %v", e)
+			}
+		}
+	}
 	PushNotifyRecords(notis)
 }
 

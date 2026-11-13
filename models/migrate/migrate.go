@@ -569,6 +569,8 @@ func (t *MessageTemplate) TableName() string {
 }
 
 type NotifyRule struct {
+	ReceiverMode    string                  `gorm:"column:receiver_mode;type:varchar(20);default:original"`
+	DutyGroupID     int64                   `gorm:"column:duty_group_id;default:0"`
 	ID              int64                   `gorm:"column:id;primaryKey;autoIncrement"`
 	Name            string                  `gorm:"column:name;type:varchar(255);not null"`
 	Description     string                  `gorm:"column:description;type:text"`

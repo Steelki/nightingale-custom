@@ -45,7 +45,7 @@ func (rt *Router) notifyRulesAdd(c *gin.Context) {
 		nr.UpdateAt = now
 		nr.CleanFEFields()
 
-		err := models.Insert(rt.Ctx, nr)
+		err := models.CreateNotifyRule(rt.Ctx, nr)
 		ginx.Dangerous(err)
 	}
 	ginx.NewRender(c).Data(lst, nil)

@@ -18,6 +18,8 @@ import (
 	alertrt "github.com/ccfos/nightingale/v6/alert/router"
 	"github.com/ccfos/nightingale/v6/center/cconf"
 	"github.com/ccfos/nightingale/v6/center/cconf/rsa"
+	"github.com/ccfos/nightingale/v6/center/claimnotify"
+	"github.com/ccfos/nightingale/v6/center/dutynotify"
 	"github.com/ccfos/nightingale/v6/center/integration"
 	"github.com/ccfos/nightingale/v6/center/metas"
 	centerrt "github.com/ccfos/nightingale/v6/center/router"
@@ -75,6 +77,9 @@ func Initialize(configDir string, cryptoKey string) (func(), error) {
 	}
 	ctx := ctx.NewContext(context.Background(), db, true)
 	migrate.Migrate(db)
+	if err := models.InitDutySchema(db, "data/duty-notification.key"); err != nil {
+		return nil, err
+	}
 	isRootInit := models.InitRoot(ctx)
 	models.InitDefaultAIAgent(ctx)
 
@@ -215,6 +220,8 @@ func Initialize(configDir string, cryptoKey string) (func(), error) {
 	}
 
 	httpClean := httpx.Init(config.HTTP, r)
+	dutyNoticeClean := dutynotify.Start(db, func() string { return configCvalCache.GetSiteInfo().SiteUrl })
+	claimNoticeClean := claimnotify.Start(db, func() string { return configCvalCache.GetSiteInfo().SiteUrl })
 
 	fmt.Printf("please view n9e at  http://%v:%v\n", config.Alert.Heartbeat.IP, config.HTTP.Port)
 	if isRootInit {
@@ -225,6 +232,8 @@ func Initialize(configDir string, cryptoKey string) (func(), error) {
 		// httpClean 优雅关闭：等在途请求处理完才返回，之后不再有 remote write
 		// 请求进到本地 tsdb，Close 不会与写入竞态
 		httpClean()
+		claimNoticeClean()
+		dutyNoticeClean()
 		if tsdbInstance != nil {
 			if err := tsdbInstance.Close(); err != nil {
 				logger.Errorf("failed to close embedded tsdb: %v", err)

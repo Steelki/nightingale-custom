@@ -125,6 +125,9 @@ func (e *Consumer) consumeOne(event *models.AlertCurEvent) {
 	}
 
 	e.persist(event)
+	if err := models.ObserveEventResponse(e.ctx.DB, event); err != nil {
+		logger.Errorf("record event response: %v", err)
+	}
 
 	if event.NotifyMuted == 1 {
 		// 命中「只屏蔽通知」规则：事件已产生并记录，此处跳过全部通知渠道，
