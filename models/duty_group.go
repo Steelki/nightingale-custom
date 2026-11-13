@@ -148,8 +148,14 @@ func InitDutySchema(db *gorm.DB, keyPath string) error {
 	if err != nil {
 		return err
 	}
-	return db.AutoMigrate(&DutyGroup{}, &DutyAudit{}, &DutySystemSettings{}, &EventResponse{}, &EventResponseLog{}, &ClaimNotice{}, &DutyNotice{}, &DutyReminderClock{})
+	return db.AutoMigrate(DutySchemaModels()...)
 }
+
+// DutySchemaModels is shared by runtime migration and the checked-in SQL generator.
+func DutySchemaModels() []interface{} {
+	return []interface{}{&DutyGroup{}, &DutyAudit{}, &DutySystemSettings{}, &EventResponse{}, &EventResponseLog{}, &ClaimNotice{}, &DutyNotice{}, &DutyReminderClock{}}
+}
+
 func sealDuty(v any) (string, error) {
 	if dutyAEAD == nil {
 		return "", errors.New("值班通知密钥未初始化")

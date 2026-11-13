@@ -82,3 +82,7 @@ go test ./center/dutynotify ./center/claimnotify -count=1
 API/UI验证应使用独立端口和数据库，并移除或禁用真实通知目标。`N9E_DISABLE_DUTY_DELIVERY=1` 仅禁用新的dutynotify worker，**不是全系统禁发开关**，不会禁用原有告警/认领发送链路。
 
 GitHub Actions保留上游定义；本次不推版本标签、不执行发布。新仓库首次push可能触发上游模板检查，但不代表本项目已配置自动测试/部署流水线。
+
+## 数据库初始化与升级维护
+
+见 [数据库初始化与升级](docker/migratesql/custom/README.md)。三个数据库基础初始化SQL已同步二次开发模型，另提供版本化增量SQL；`go run ./cmd/duty-schema --check` 检查SQL与模型的一致性。SQL导入后仍需运行同版本程序完成上游迁移和应用初始化。
