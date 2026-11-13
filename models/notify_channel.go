@@ -55,6 +55,7 @@ func (ncc *NotifyChannelConfig) TableName() string {
 }
 
 type RequestConfig struct {
+	TeamsVoiceConfig               *TeamsVoiceConfig               `json:"teams_voice_config,omitempty" gorm:"serializer:json"`
 	HTTPRequestConfig              *HTTPRequestConfig              `json:"http_request_config,omitempty" gorm:"serializer:json"`
 	SMTPRequestConfig              *SMTPRequestConfig              `json:"smtp_request_config,omitempty" gorm:"serializer:json"`
 	ScriptRequestConfig            *ScriptRequestConfig            `json:"script_request_config,omitempty" gorm:"serializer:json"`
@@ -136,6 +137,7 @@ var nativeRequestTypes = map[string]struct{}{
 	RequestTypeSlackWebhook:      {},
 	RequestTypeMattermostWebhook: {},
 	RequestTypeTeams:             {},
+	RequestTypeTeamsVoice:        {},
 	RequestTypeTwilio:            {},
 	RequestTypePushover:          {},
 	RequestTypeNtfy:              {},

@@ -24,6 +24,7 @@ import (
 	"github.com/ccfos/nightingale/v6/center/metas"
 	centerrt "github.com/ccfos/nightingale/v6/center/router"
 	"github.com/ccfos/nightingale/v6/center/sso"
+	"github.com/ccfos/nightingale/v6/center/teamsvoice"
 	"github.com/ccfos/nightingale/v6/conf"
 	"github.com/ccfos/nightingale/v6/cron"
 	"github.com/ccfos/nightingale/v6/dumper"
@@ -224,6 +225,7 @@ func Initialize(configDir string, cryptoKey string) (func(), error) {
 
 	httpClean := httpx.Init(config.HTTP, r)
 	// 两类持久任务各自消费：认领群通知与其他响应/值班通知；停止句柄在清理函数中调用。
+	teamsVoiceClean := teamsvoice.Start(db)
 	dutyNoticeClean := dutynotify.Start(db, func() string { return configCvalCache.GetSiteInfo().SiteUrl })
 	claimNoticeClean := claimnotify.Start(db, func() string { return configCvalCache.GetSiteInfo().SiteUrl })
 
@@ -236,6 +238,7 @@ func Initialize(configDir string, cryptoKey string) (func(), error) {
 		// httpClean 优雅关闭：等在途请求处理完才返回，之后不再有 remote write
 		// 请求进到本地 tsdb，Close 不会与写入竞态
 		httpClean()
+		teamsVoiceClean()
 		claimNoticeClean()
 		dutyNoticeClean()
 		if tsdbInstance != nil {

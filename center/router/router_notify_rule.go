@@ -305,7 +305,7 @@ func resolveSiteUrl(ctx *ctx.Context) string {
 // NeedMessageTemplate 表示该媒介类型是否依赖消息模板。
 // flashduty / pagerduty 从 event 字段直接构造 payload，不走模板。
 func NeedMessageTemplate(requestType string) bool {
-	return requestType != "flashduty" && requestType != "pagerduty"
+	return requestType != "flashduty" && requestType != "pagerduty" && requestType != models.RequestTypeTeamsVoice
 }
 
 func SendNotifyChannelMessage(ctx *ctx.Context, userCache *memsto.UserCacheType, userGroup *memsto.UserGroupCacheType, notifyConfig models.NotifyConfig, events []*models.AlertCurEvent) (string, error) {
@@ -353,6 +353,9 @@ func SendNotifyChannelMessage(ctx *ctx.Context, userCache *memsto.UserCacheType,
 func sendToNotifyChannel(ctx *ctx.Context, userCache *memsto.UserCacheType, userGroup *memsto.UserGroupCacheType,
 	notifyConfig models.NotifyConfig, notifyChannel *models.NotifyChannelConfig,
 	events []*models.AlertCurEvent, tplContent map[string]interface{}, siteUrl string) (string, error) {
+	if notifyChannel.RequestType == models.RequestTypeTeamsVoice {
+		return "", fmt.Errorf("Teams语音为持久任务，请保存媒介后使用专用测试告警验证，并在告警详情查看通话记录")
+	}
 	client, err := models.GetHTTPClient(notifyChannel)
 	if err != nil {
 		return "", fmt.Errorf("failed to get http client: %v", err)

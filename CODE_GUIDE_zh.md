@@ -203,3 +203,7 @@ git diff 98653573c386949985acc9abe6e5957ce6017904 HEAD -- alert/dispatch/dispatc
 ## 外接IM语音设计（未实现）
 
 参见 [IM语音与升级设计](VOICE_INTEGRATION_DESIGN_zh.md)，涵盖平台能力边界、企业应用授权、身份映射、回执状态、升级并发与多数据库验收要求。
+
+### Teams应用内语音首版
+
+独立teams_voice媒介、Azure Speech告警标题播报、持久呼叫/认证回调和详情记录已实现，本地模拟通过，真实租户尚未联调。接入/配置/路由/SQL和限制见[语音设计第0节](VOICE_INTEGRATION_DESIGN_zh.md#0-teams首版实际实现2026-11-13)。多级升级执行器未包含在本批。

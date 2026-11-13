@@ -13,6 +13,8 @@ import (
 )
 
 func (rt *Router) registerDutyRoutes(p *gin.RouterGroup) {
+	p.POST("/teams-voice/callback/:id", rt.teamsVoiceCallback)
+	p.GET("/teams-voice/audio/:id", rt.teamsVoiceAudio)
 	p.GET("/event-response", rt.auth(), rt.user(), rt.eventResponse)
 	p.POST("/event-response", rt.auth(), rt.user(), rt.eventResponse)
 	p.GET("/duty-groups", rt.auth(), rt.user(), rt.dutyGroups)

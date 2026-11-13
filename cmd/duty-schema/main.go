@@ -48,6 +48,18 @@ func main() {
 		upgrade += "ALTER TABLE notify_rule ADD COLUMN receiver_mode varchar(20) DEFAULT 'original';\nALTER TABLE notify_rule ADD COLUMN duty_group_id bigint DEFAULT 0;\n"
 
 		upgrade += duty
+		teams := "-- 002: Teams voice call records; apply once after 001, or use runtime AutoMigrate.\n"
+		for _, line := range strings.Split(duty, "\n") {
+			if strings.Contains(line, "response_teams_voice_call") {
+				teams += line + "\n"
+			}
+		}
+		teamsPath := "docker/migratesql/custom/002-teams-voice-" + entry.dialect + ".sql"
+		if _, err := os.Stat(teamsPath); os.IsNotExist(err) {
+			write(teamsPath, teams, *check)
+		} else {
+			must(err)
+		}
 		// Released upgrade scripts are immutable; future changes get a new version.
 		upgradePath := "docker/migratesql/custom/001-duty-" + entry.dialect + ".sql"
 		if _, err := os.Stat(upgradePath); os.IsNotExist(err) {

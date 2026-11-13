@@ -73,3 +73,9 @@ go test ./internal/dutyschema -count=1
 ## 长期兼容要求
 
 SQLite、MySQL、PostgreSQL均为后续开发的兼容目标。结构、查询与事务变更须同时考虑三种数据库，同批维护新库初始化和旧库升级路径；逐一记录实库验证结果和未验证项。具体要求见仓库根目录 `AGENTS.md`。
+
+## Teams语音002（2026-11-13）
+
+新增 `response_teams_voice_call`，SQLite/MySQL/PostgreSQL基础初始化SQL已同步。已有001版本：备份数据库和 `data/duty-notification.key` 后，运行对应数据库的 `002-teams-voice-*.sql` 一次，或由新版本启动AutoMigrate创建缺失表，二选一；不能在启动已迁移后重复手工CREATE TABLE。全新实例使用最新基础SQL，再由同版本程序完成上游初始化；不要再执行001/002。
+
+Teams事件/配置快照复用值班通知加密密钥，丢失时必须恢复原密钥，不能新建替代。音频为可过期临时文件，环境变量凭据由部署环境保管，不进入Git或SQL。SQLite升级及保数据已本地验证；MySQL/PostgreSQL仅生成检查，未实库验收。

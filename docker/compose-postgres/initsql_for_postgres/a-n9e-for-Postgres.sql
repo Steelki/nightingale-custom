@@ -1046,6 +1046,7 @@ CREATE TABLE "response_duty_reminder_clock" ("group_id" bigserial,"next_at" bigi
 CREATE TABLE "response_duty_settings" ("id" bigserial,"fallback" text,"version" bigint,"secrets" text,PRIMARY KEY ("id"));
 CREATE TABLE "response_event" ("assignment_version" bigint,"id" bigserial,"episode" varchar(160),"hash" varchar(128),"first_trigger_time" bigint,"owner_id" bigint,"owner_name" text,"recovered" boolean,"unclaimed_since" bigint,"version" bigint,"updated_at" bigint,PRIMARY KEY ("id"));
 CREATE TABLE "response_event_log" ("id" bigserial,"response_id" bigint,"actor" text,"action" text,"content" text,"created_at" bigint,PRIMARY KEY ("id"));
+CREATE TABLE "response_teams_voice_call" ("id" varchar(36),"dedup" varchar(64),"episode" varchar(160),"channel_id" bigint,"rule_id" bigint,"group_id" bigint,"recipient" varchar(320),"title" text,"state" varchar(24),"call_id" varchar(128),"answered_at" bigint,"play_state" varchar(24),"ended_at" bigint,"reason" text,"created_at" bigint,"expires_at" bigint,"fallback_queued" boolean,"close_requested" boolean,"audio_token" varchar(64),"payload" text,PRIMARY KEY ("id"));
 CREATE INDEX IF NOT EXISTS "idx_response_claim_notice_response_id" ON "response_claim_notice" ("response_id");
 CREATE INDEX IF NOT EXISTS "idx_response_claim_notice_status" ON "response_claim_notice" ("status");
 CREATE INDEX IF NOT EXISTS "idx_response_duty_audit_group_id" ON "response_duty_audit" ("group_id");
@@ -1054,8 +1055,12 @@ CREATE INDEX IF NOT EXISTS "idx_response_duty_notice_response_id" ON "response_d
 CREATE INDEX IF NOT EXISTS "idx_response_duty_notice_status" ON "response_duty_notice" ("status");
 CREATE INDEX IF NOT EXISTS "idx_response_event_hash" ON "response_event" ("hash");
 CREATE INDEX IF NOT EXISTS "idx_response_event_log_response_id" ON "response_event_log" ("response_id");
+CREATE INDEX IF NOT EXISTS "idx_response_teams_voice_call_episode" ON "response_teams_voice_call" ("episode");
+CREATE INDEX IF NOT EXISTS "idx_response_teams_voice_call_expires_at" ON "response_teams_voice_call" ("expires_at");
+CREATE INDEX IF NOT EXISTS "idx_response_teams_voice_call_state" ON "response_teams_voice_call" ("state");
 CREATE UNIQUE INDEX IF NOT EXISTS "idx_response_claim_notice_dedup_key" ON "response_claim_notice" ("dedup_key");
 CREATE UNIQUE INDEX IF NOT EXISTS "idx_response_duty_group_name" ON "response_duty_group" ("name");
 CREATE UNIQUE INDEX IF NOT EXISTS "idx_response_duty_notice_dedup_key" ON "response_duty_notice" ("dedup_key");
 CREATE UNIQUE INDEX IF NOT EXISTS "idx_response_event_episode" ON "response_event" ("episode");
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_response_teams_voice_call_dedup" ON "response_teams_voice_call" ("dedup");
 -- END GENERATED DUTY SCHEMA

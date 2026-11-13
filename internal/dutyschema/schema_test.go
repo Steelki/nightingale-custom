@@ -178,3 +178,44 @@ func TestUpstreamSQLUpgradePreservesRule(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestTeamsVoice002Upgrade(t *testing.T) {
+	db := open(t)
+	// Start with the released pre-Teams schema, preserving an existing response.
+	ddl, e := Render("sqlite", true)
+	if e != nil {
+		t.Fatal(e)
+	}
+	ddl = strings.ReplaceAll(ddl, "`receiver_mode` varchar(20) DEFAULT \"original\",", "")
+	ddl = strings.ReplaceAll(ddl, "`duty_group_id` integer DEFAULT 0,", "")
+	apply(t, db, ddl)
+	old, e := os.ReadFile("../../docker/migratesql/custom/001-duty-sqlite.sql")
+	if e != nil {
+		t.Fatal(e)
+	}
+	apply(t, db, string(old))
+	apply(t, db, "INSERT INTO response_event(id,episode,owner_id,version) VALUES(1,'preserved:100',42,7)")
+	next, e := os.ReadFile("../../docker/migratesql/custom/002-teams-voice-sqlite.sql")
+	if e != nil {
+		t.Fatal(e)
+	}
+	apply(t, db, string(next))
+	key := filepath.Join(t.TempDir(), "key")
+	for i := 0; i < 2; i++ {
+		if e = models.InitDutySchema(db, key); e != nil {
+			t.Fatal(e)
+		}
+	}
+	var row models.EventResponse
+	db.First(&row, 1)
+	if row.OwnerID != 42 || row.Version != 7 {
+		t.Fatal("upgrade changed ownership")
+	}
+	expected := open(t)
+	if e = expected.AutoMigrate(&models.TeamsVoiceCall{}); e != nil {
+		t.Fatal(e)
+	}
+	if !reflect.DeepEqual(shape(t, db, &models.TeamsVoiceCall{}), shape(t, expected, &models.TeamsVoiceCall{})) {
+		t.Fatal("002 migration shape differs")
+	}
+}

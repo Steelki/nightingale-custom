@@ -97,3 +97,6 @@ evallog/
 *.key
 *.pem
 /backups/
+
+# Short-lived synthesized alert audio
+data/teams-voice/

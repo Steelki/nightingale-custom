@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gorm.io/gorm"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -218,7 +219,7 @@ func (e *Dispatch) HandleEventWithNotifyRule(eventOrigin *models.AlertCurEvent) 
 				// TODO: 例外应按 request_config 是否引用 $tpl 判定，而不是按 ident 硬编码，
 				// 免得前后端两份例外清单再次漂移。
 				if notifyChannel.RequestType != "flashduty" && notifyChannel.RequestType != "pagerduty" &&
-					notifyChannel.Ident != "callback" && messageTemplate == nil {
+					notifyChannel.Ident != "callback" && notifyChannel.RequestType != models.RequestTypeTeamsVoice && messageTemplate == nil {
 					logger.Warningf("notify_id: %d, channel_name: %v, event:%s, template_id: %d, message_template not found", notifyRuleId, notifyChannel.Ident, eventCopy.Hash, notifyRule.NotifyConfigs[i].TemplateID)
 					sender.NotifyRecord(e.ctx, []*models.AlertCurEvent{eventCopy}, notifyRuleId, notifyChannel.Name, "", "", errors.New("message_template not found"))
 
@@ -633,6 +634,13 @@ func BuildNotifyContext(nctx *ctx.Context, userCache *memsto.UserCacheType, user
 	return &NotifyContext{
 		Provider: p,
 		Request: &provider.NotifyRequest{
+			DB: func() *gorm.DB {
+				if nctx != nil {
+					return nctx.DB
+				}
+				return nil
+			}(),
+			DutyGroupID:          notifyConfig.DutyGroupID,
 			NotifyRuleId:         notifyRuleId,
 			Config:               notifyChannel,
 			Events:               events,

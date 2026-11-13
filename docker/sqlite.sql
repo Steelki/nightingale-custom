@@ -1875,6 +1875,7 @@ CREATE TABLE `response_duty_reminder_clock` (`group_id` integer PRIMARY KEY AUTO
 CREATE TABLE `response_duty_settings` (`id` integer PRIMARY KEY AUTOINCREMENT,`fallback` text,`version` integer,`secrets` text);
 CREATE TABLE `response_event_log` (`id` integer PRIMARY KEY AUTOINCREMENT,`response_id` integer,`actor` text,`action` text,`content` text,`created_at` integer);
 CREATE TABLE `response_event` (`assignment_version` integer,`id` integer PRIMARY KEY AUTOINCREMENT,`episode` text,`hash` text,`first_trigger_time` integer,`owner_id` integer,`owner_name` text,`recovered` numeric,`unclaimed_since` integer,`version` integer,`updated_at` integer);
+CREATE TABLE `response_teams_voice_call` (`id` text,`dedup` text,`episode` text,`channel_id` integer,`rule_id` integer,`group_id` integer,`recipient` text,`title` text,`state` text,`call_id` text,`answered_at` integer,`play_state` text,`ended_at` integer,`reason` text,`created_at` integer,`expires_at` integer,`fallback_queued` numeric,`close_requested` numeric,`audio_token` text,`payload` text,PRIMARY KEY (`id`));
 CREATE INDEX `idx_response_claim_notice_response_id` ON `response_claim_notice`(`response_id`);
 CREATE INDEX `idx_response_claim_notice_status` ON `response_claim_notice`(`status`);
 CREATE INDEX `idx_response_duty_audit_group_id` ON `response_duty_audit`(`group_id`);
@@ -1883,8 +1884,12 @@ CREATE INDEX `idx_response_duty_notice_response_id` ON `response_duty_notice`(`r
 CREATE INDEX `idx_response_duty_notice_status` ON `response_duty_notice`(`status`);
 CREATE INDEX `idx_response_event_hash` ON `response_event`(`hash`);
 CREATE INDEX `idx_response_event_log_response_id` ON `response_event_log`(`response_id`);
+CREATE INDEX `idx_response_teams_voice_call_episode` ON `response_teams_voice_call`(`episode`);
+CREATE INDEX `idx_response_teams_voice_call_expires_at` ON `response_teams_voice_call`(`expires_at`);
+CREATE INDEX `idx_response_teams_voice_call_state` ON `response_teams_voice_call`(`state`);
 CREATE UNIQUE INDEX `idx_response_claim_notice_dedup_key` ON `response_claim_notice`(`dedup_key`);
 CREATE UNIQUE INDEX `idx_response_duty_group_name` ON `response_duty_group`(`name`);
 CREATE UNIQUE INDEX `idx_response_duty_notice_dedup_key` ON `response_duty_notice`(`dedup_key`);
 CREATE UNIQUE INDEX `idx_response_event_episode` ON `response_event`(`episode`);
+CREATE UNIQUE INDEX `idx_response_teams_voice_call_dedup` ON `response_teams_voice_call`(`dedup`);
 -- END GENERATED DUTY SCHEMA

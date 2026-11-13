@@ -263,6 +263,11 @@ func LoggerWithConfig(conf LoggerConfig) gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
+		// 语音音频链接含短期访问凭证，且二进制响应不可被访问日志缓冲。
+		if strings.Contains(c.Request.URL.Path, "/teams-voice/") {
+			c.Next()
+			return
+		}
 		if !conf.PrintAccessLog() {
 			c.Next()
 			return

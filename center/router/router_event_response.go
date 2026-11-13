@@ -24,6 +24,11 @@ func (rt *Router) eventResponse(c *gin.Context) {
 		ginx.Bomb(400, "告警关联参数无效")
 	}
 	db := models.DB(rt.Ctx)
+	calls := []models.TeamsVoiceCall{}
+	if err := db.Where("episode=?", models.ResponseEpisode(query.Hash, query.First)).Order("created_at DESC").Limit(30).Find(&calls).Error; err != nil {
+		dutyHTTPError(c, err)
+		return
+	}
 	var row models.EventResponse
 	err := db.Where("episode=?", models.ResponseEpisode(query.Hash, query.First)).First(&row).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -33,7 +38,7 @@ func (rt *Router) eventResponse(c *gin.Context) {
 			if c.Request.Method == "GET" {
 				var count int64
 				if db.Model(&models.AlertHisEvent{}).Where("hash=? AND first_trigger_time=?", query.Hash, query.First).Count(&count).Error == nil && count > 0 {
-					ginx.NewRender(c).Data(gin.H{"state": nil, "logs": []models.EventResponseLog{}, "unavailable_reason": "此历史周期未建立处理记录"}, nil)
+					ginx.NewRender(c).Data(gin.H{"teams_voice_calls": calls, "state": nil, "logs": []models.EventResponseLog{}, "unavailable_reason": "此历史周期未建立处理记录"}, nil)
 					return
 				}
 			}
@@ -41,7 +46,7 @@ func (rt *Router) eventResponse(c *gin.Context) {
 			return
 		}
 		if c.Request.Method == "GET" {
-			ginx.NewRender(c).Data(gin.H{"state": models.EventResponse{Hash: query.Hash, FirstTriggerTime: query.First}, "logs": []models.EventResponseLog{}}, nil)
+			ginx.NewRender(c).Data(gin.H{"teams_voice_calls": calls, "state": models.EventResponse{Hash: query.Hash, FirstTriggerTime: query.First}, "logs": []models.EventResponseLog{}}, nil)
 			return
 		}
 		if err = models.ObserveEventResponse(db, &event); err == nil {
@@ -86,5 +91,5 @@ func (rt *Router) eventResponse(c *gin.Context) {
 		dutyHTTPError(c, err)
 		return
 	}
-	ginx.NewRender(c).Data(gin.H{"duty_notices": jobs, "state": row, "logs": logs, "claim_notices": notices}, nil)
+	ginx.NewRender(c).Data(gin.H{"teams_voice_calls": calls, "duty_notices": jobs, "state": row, "logs": logs, "claim_notices": notices}, nil)
 }

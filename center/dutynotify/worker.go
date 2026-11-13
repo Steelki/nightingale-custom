@@ -337,6 +337,9 @@ func (w *Worker) lifecycle(ctx context.Context, n models.DutyNotice, p models.Du
 		}
 		return "sent", title + "邮件已发送给" + recipient
 	}
+	if channel.RequestType == models.RequestTypeTeamsVoice {
+		return "skipped", "Teams语音仅用于未认领告警提醒；转交/取消认领详情请查看群消息"
+	}
 	// Existing phone/user-info providers continue to use their configured templates.
 	event := p.Event
 	event.RuleName = "【" + title + "，接收人：" + recipient + "】" + event.RuleName

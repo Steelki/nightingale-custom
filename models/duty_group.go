@@ -120,6 +120,15 @@ func InitDutySchema(db *gorm.DB, keyPath string) error {
 		if count > 0 {
 			return errors.New("值班通知密钥文件缺失，请恢复配套密钥")
 		}
+		if db.Migrator().HasTable(&TeamsVoiceCall{}) {
+			var n int64
+			if err = db.Model(&TeamsVoiceCall{}).Where("payload <> ?", "").Count(&n).Error; err != nil {
+				return err
+			}
+			if n > 0 {
+				return errors.New("存在加密Teams语音任务，必须恢复原值班通知密钥")
+			}
+		}
 		if err = os.MkdirAll(filepath.Dir(keyPath), 0700); err != nil {
 			return err
 		}
@@ -158,7 +167,7 @@ func InitDutySchema(db *gorm.DB, keyPath string) error {
 
 // DutySchemaModels is shared by runtime migration and the checked-in SQL generator.
 func DutySchemaModels() []interface{} {
-	return []interface{}{&DutyGroup{}, &DutyAudit{}, &DutySystemSettings{}, &EventResponse{}, &EventResponseLog{}, &ClaimNotice{}, &DutyNotice{}, &DutyReminderClock{}}
+	return []interface{}{&DutyGroup{}, &DutyAudit{}, &DutySystemSettings{}, &EventResponse{}, &EventResponseLog{}, &ClaimNotice{}, &DutyNotice{}, &DutyReminderClock{}, &TeamsVoiceCall{}}
 }
 
 func sealDuty(v any) (string, error) {

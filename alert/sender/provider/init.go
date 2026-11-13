@@ -30,6 +30,7 @@ func init() {
 	DefaultRegistry.Register(&SlackWebhookProvider{})
 	DefaultRegistry.Register(&MattermostWebhookProvider{})
 	DefaultRegistry.Register(&TeamsProvider{})
+	DefaultRegistry.Register(&TeamsVoiceProvider{})
 	DefaultRegistry.Register(&TwilioProvider{})
 	DefaultRegistry.Register(&PushoverProvider{})
 	DefaultRegistry.Register(&NtfyProvider{})
