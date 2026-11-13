@@ -30,6 +30,9 @@ type DutyOverride struct {
 	UserID int64  `json:"user_id"`
 	Reason string `json:"reason"`
 }
+
+// DutyStep目前仅保存升级配置，尚无消费这些级别的自研升级执行器。
+// 后续执行须区分未认领超时和平台明确失败，不能因普通邮件/群消息失败直接触发电话升级。
 type DutyStep struct {
 	WaitMinutes int     `json:"wait_minutes"`
 	UserIDs     []int64 `json:"user_ids"`

@@ -199,3 +199,7 @@ git diff 98653573c386949985acc9abe6e5957ce6017904 HEAD -- alert/dispatch/dispatc
 ```
 
 重点接入点是`center.Initialize`注册数据库/worker/路由、`consumeOne`观察事件周期、`BuildNotifyContext`接入值班解析、`NotifyRecord`接入失败兜底，以及发送前的认领检查。修复上游行为前先判断是否会影响这些接入点。
+
+## 外接IM语音设计（未实现）
+
+参见 [IM语音与升级设计](VOICE_INTEGRATION_DESIGN_zh.md)，涵盖平台能力边界、企业应用授权、身份映射、回执状态、升级并发与多数据库验收要求。

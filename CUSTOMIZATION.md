@@ -90,3 +90,7 @@ GitHub Actions保留上游定义；本次不推版本标签、不执行发布。
 ## 中文代码导读
 
 从目录职责、启动入口、主要调用链及二次开发接入点开始阅读：[CODE_GUIDE_zh.md](CODE_GUIDE_zh.md)。
+
+## 外接IM语音设计（未实现）
+
+参见 [IM语音与升级设计](VOICE_INTEGRATION_DESIGN_zh.md)，涵盖平台能力边界、企业应用授权、身份映射、回执状态、升级并发与多数据库验收要求。

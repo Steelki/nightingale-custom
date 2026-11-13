@@ -8,7 +8,8 @@ import (
 )
 
 // NotifyChannelProvider 通知媒介提供者接口
-// 新增媒介只需实现此接口并注册即可
+// 单次发送媒介通过此接口接入并注册；有异步回执的语音媒介还需持久任务、回调认证及状态机。
+// 外接IM语音的设计见仓库根目录 VOICE_INTEGRATION_DESIGN_zh.md，尚未实现该扩展。
 type NotifyChannelProvider interface {
 	// Ident 返回媒介标识，与 notify_channel 表的 ident 字段对应
 	// 如 "dingtalk", "wecom", "email", "flashduty", "http"
@@ -37,6 +38,8 @@ type NotifyRequest struct {
 	SiteUrl              string
 }
 
+// NotifyResult 描述本次接口调用结果；Err == nil不能统一解释为已送达、已接听或已播放。
+// 未来语音结果需保存平台呼叫ID并等待认证回执，不能仅靠Response文本判断最终通话状态。
 type NotifyResult struct {
 	Target   string // 发送目标 (用于 NotifyRecord)
 	Response string // 响应内容

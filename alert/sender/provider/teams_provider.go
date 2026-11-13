@@ -15,6 +15,8 @@ import (
 // TeamsProvider sends Adaptive Cards to Teams Workflows webhooks.
 // https://learn.microsoft.com/microsoftteams/platform/webhooks-and-connectors/how-to/connectors-using
 // A successful workflow response acknowledges submission, not delivery to Teams.
+// 当前仅为群卡片/Workflows消息媒介，不创建Teams应用内语音呼叫。
+// 后续Calling Bot应使用独立媒介和Graph通话状态链路，不能复用Webhook成功作为接听结果。
 type TeamsProvider struct{}
 
 func (*TeamsProvider) Ident() string { return models.Teams }

@@ -47,6 +47,8 @@ type FeishuUserIDItem struct {
 	UserID string `json:"user_id"`
 }
 
+// 当前只发送飞书应用消息，不调用urgent_phone或提供最终电话回执。
+// 后续电话加急需保留message_id，再调用同一应用自己的消息加急接口；加急受理不等于接听。
 type FeishuAppProvider struct{}
 
 func (p *FeishuAppProvider) Ident() string { return "feishuapp" }

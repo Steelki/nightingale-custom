@@ -139,6 +139,9 @@ func doSendAndRecord(ctx *ctx.Context, url, token string, body interface{}, chan
 	NotifyRecord(ctx, events, 0, channel, token, res, err)
 }
 
+// NotifyRecord记录发送调用的结果，不是电话供应商的异步回执入口。
+// 未来呼叫状态应由独立认证回调按attempt/call ID关联；不要把HTTP受理成功当作已接听，
+// 也不要把结果未知的网络超时当作确定未拨通而自动重拨。
 func NotifyRecord(ctx *ctx.Context, evts []*models.AlertCurEvent, notifyRuleID int64, channel, target, res string, err error) {
 	// 一个通知可能对应多个 event，都需要记录
 	notis := make([]*models.NotificationRecord, 0, len(evts))

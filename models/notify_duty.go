@@ -7,6 +7,8 @@ import (
 )
 
 // DutyChannelKind returns the shared endpoint required by a supported channel.
+// 当前个人联系方式分支只支持email/phone，不能据此认为已支持Teams用户ID或飞书open_id。
+// 外接IM语音需增加带租户/应用作用域的身份映射，以及独立的渠道能力判断。
 func DutyChannelKind(channel *NotifyChannelConfig) (string, error) {
 	if channel.RequestType == "http" {
 		switch channel.Ident {

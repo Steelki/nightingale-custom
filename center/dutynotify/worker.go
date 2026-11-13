@@ -56,6 +56,8 @@ func Start(db *gorm.DB, siteURL func() string) func() {
 // RunOnce 先生成到期提醒，再以条件更新抢占 pending 任务，发送后记录最终状态。
 // sending 超过两分钟记为 unknown 而不自动重发：网络超时/进程退出不等于对方没收到。
 // 本实现不承诺跨网络的 exactly-once，也没有电话回执与逐级升级执行器。
+// 当前unknown策略适用于本worker的单次通知结果，不是完整的语音通话状态机。
+// 外接IM呼叫还需关联供应商ID、处理重复/乱序回执，并独立判断升级条件；参见语音设计文档。
 func (w *Worker) RunOnce(ctx context.Context, now time.Time) error {
 	if err := models.EnqueueDueDutyReminders(w.DB, now); err != nil {
 		return err
