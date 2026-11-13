@@ -27,6 +27,8 @@ func DutyChannelKind(channel *NotifyChannelConfig) (string, error) {
 	return "", errors.New("该媒介暂不支持值班组接收，请使用邮件、电话、钉钉、飞书或Webhook媒介")
 }
 
+// VerifyDuty保证值班模式只有一个接收来源：校验组/渠道并清除旧人员、团队、机器人参数。
+// 新建和修改都须经过该校验，不能只在前端隐藏字段。
 func (r *NotifyRule) VerifyDuty(c *ctx.Context) error {
 	if r.ReceiverMode == "" {
 		r.ReceiverMode = "original"

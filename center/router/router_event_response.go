@@ -9,6 +9,8 @@ import (
 	"net/http"
 )
 
+// eventResponse 是处理进展的单一API：GET读取状态/日志/通知记录，POST执行带版本号的动作。
+// 状态关联使用告警周期参数；权限和事务规则仍由 ChangeEventResponse 兜底，不能只依赖前端按钮。
 func (rt *Router) eventResponse(c *gin.Context) {
 	actor := c.MustGet("user").(*models.User)
 	if actor.IsDisabled() {

@@ -52,6 +52,10 @@ func Start(db *gorm.DB, siteURL func() string) func() {
 	}()
 	return func() { cancel(); <-done }
 }
+
+// RunOnce 先生成到期提醒，再以条件更新抢占 pending 任务，发送后记录最终状态。
+// sending 超过两分钟记为 unknown 而不自动重发：网络超时/进程退出不等于对方没收到。
+// 本实现不承诺跨网络的 exactly-once，也没有电话回执与逐级升级执行器。
 func (w *Worker) RunOnce(ctx context.Context, now time.Time) error {
 	if err := models.EnqueueDueDutyReminders(w.DB, now); err != nil {
 		return err
@@ -256,6 +260,9 @@ func (w *Worker) reminder(ctx context.Context, n models.DutyNotice, p models.Dut
 	}
 	return "sent", "当前值班人员及联系电话已发送到" + p.Endpoint.Kind
 }
+
+// lifecycle 发送转交/取消认领通知前复查归属版本、恢复状态及当前通知规则。
+// 已过时任务跳过；这里使用显式接收人构建上下文，不能走会拦截已认领事件的普通提醒入口。
 func (w *Worker) lifecycle(ctx context.Context, n models.DutyNotice, p models.DutyNoticePayload, link string) (string, string) {
 	var row models.EventResponse
 	if e := w.DB.First(&row, n.ResponseID).Error; e != nil {

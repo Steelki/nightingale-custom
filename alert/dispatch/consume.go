@@ -96,6 +96,8 @@ func (e *Consumer) consume(events []interface{}, sema *semaphore.Semaphore) {
 	}
 }
 
+// consumeOne 消费规则引擎产生的事件快照：解析字段、持久化、更新处理状态，再进入通知分发。
+// NotifyMuted 只控制通知；命中它的事件仍保留记录，不能把“未通知”理解为“未产生告警”。
 func (e *Consumer) consumeOne(event *models.AlertCurEvent) {
 	LogEvent(event, "consume")
 

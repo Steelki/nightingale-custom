@@ -48,6 +48,8 @@ import (
 	"github.com/flashcatcloud/ibex/src/cmd/ibex"
 )
 
+// Initialize 是 center 进程的装配入口：配置/数据库 → 缓存 → 告警引擎 → HTTP 路由 → 后台通知任务。
+// 此处负责依赖与生命周期；具体排班、认领和发送规则分别在 models、dispatch 和 worker 中。
 func Initialize(configDir string, cryptoKey string) (func(), error) {
 	config, err := conf.InitCenterConfig(configDir, cryptoKey)
 	if err != nil {
@@ -76,6 +78,7 @@ func Initialize(configDir string, cryptoKey string) (func(), error) {
 		return nil, err
 	}
 	ctx := ctx.NewContext(context.Background(), db, true)
+	// 先补上游表（含通知规则），再建二次开发表；密钥须与原数据库配套，不能随部署替换。
 	migrate.Migrate(db)
 	if err := models.InitDutySchema(db, "data/duty-notification.key"); err != nil {
 		return nil, err
@@ -220,6 +223,7 @@ func Initialize(configDir string, cryptoKey string) (func(), error) {
 	}
 
 	httpClean := httpx.Init(config.HTTP, r)
+	// 两类持久任务各自消费：认领群通知与其他响应/值班通知；停止句柄在清理函数中调用。
 	dutyNoticeClean := dutynotify.Start(db, func() string { return configCvalCache.GetSiteInfo().SiteUrl })
 	claimNoticeClean := claimnotify.Start(db, func() string { return configCvalCache.GetSiteInfo().SiteUrl })
 

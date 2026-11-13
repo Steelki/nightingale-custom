@@ -86,3 +86,7 @@ GitHub Actions保留上游定义；本次不推版本标签、不执行发布。
 ## 数据库初始化与升级维护
 
 见 [数据库初始化与升级](docker/migratesql/custom/README.md)。三个数据库基础初始化SQL已同步二次开发模型，另提供版本化增量SQL；`go run ./cmd/duty-schema --check` 检查SQL与模型的一致性。SQL导入后仍需运行同版本程序完成上游迁移和应用初始化。
+
+## 中文代码导读
+
+从目录职责、启动入口、主要调用链及二次开发接入点开始阅读：[CODE_GUIDE_zh.md](CODE_GUIDE_zh.md)。

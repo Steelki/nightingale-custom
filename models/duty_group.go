@@ -96,6 +96,8 @@ func (DutySystemSettings) TableName() string { return "response_duty_settings" }
 
 var dutyAEAD cipher.AEAD
 
+// InitDutySchema 先加载通知加密密钥，再迁移二次开发表；已有密文但缺密钥时拒绝创建新密钥。
+// 它是启动初始化，不负责创建示例排班或发送消息；SQL生成与运行迁移共用 DutySchemaModels。
 func InitDutySchema(db *gorm.DB, keyPath string) error {
 	key, err := os.ReadFile(keyPath)
 	if os.IsNotExist(err) {
@@ -343,6 +345,8 @@ func (g *DutyGroup) Validate(db *gorm.DB) error {
 
 var ErrDutyConflict = errors.New("配置已更新，请刷新后重试")
 
+// SaveDutyGroup 在同一事务内处理轮班变更、校验、密钥加密、版本更新、审计及提醒时钟。
+// 回显隐藏的地址/密钥留空表示保留，Clear 才是显式清除；不能直接用前端回显覆盖密文配置。
 func SaveDutyGroup(db *gorm.DB, g *DutyGroup, actor string) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		var old DutyGroup
@@ -450,6 +454,8 @@ type DutyResolution struct {
 	Version   int64  `json:"version"`
 }
 
+// ResolveDuty 计算指定时刻的当班人：有效计划 → 按组时区轮换 → 当日替班覆盖 → 账号可用性检查。
+// 这是排班解析，既不认领告警也不改变已有负责人；换班后已认领事件仍归原负责人。
 func ResolveDuty(db *gorm.DB, g DutyGroup, at time.Time) (DutyResolution, error) {
 	r := DutyResolution{GroupID: g.ID, At: at.Format(time.RFC3339), Version: g.Version}
 	loc, err := time.LoadLocation(g.Config.Timezone)

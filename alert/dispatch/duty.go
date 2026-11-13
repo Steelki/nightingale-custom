@@ -9,6 +9,9 @@ import (
 	"github.com/ccfos/nightingale/v6/pkg/ctx"
 )
 
+// prepareDutyContext 是值班模式接入原生通知链路的适配层。
+// 当班人/恢复负责人由模型解析；公共 IM 地址来自组配置，个人渠道使用用户联系方式。
+// 返回发送专用副本，不把动态接收人写回共享的规则/渠道缓存；此函数只组装，不发送。
 func prepareDutyContext(c *ctx.Context, groupID int64, channel *models.NotifyChannelConfig, config *models.NotifyConfig, events ...*models.AlertCurEvent) (*models.NotifyChannelConfig, *models.NotifyConfig, []string, provider.NotifyChannelProvider, error) {
 	if c == nil || c.DB == nil {
 		return nil, nil, nil, nil, errors.New("值班接收须由连接中心数据库的通知节点执行")

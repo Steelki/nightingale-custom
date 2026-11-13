@@ -193,6 +193,8 @@ func EffectiveDutyFallback(db *gorm.DB, groupID int64) (DutyFallback, error) {
 }
 
 // Only real delivery failures call this; worker failures never recursively enter NotifyRecord.
+// EnqueueNotificationFailure 接收原通知失败结果，按规则/值班组查找兜底目的地并持久化任务。
+// 这是失败报告，不是上级联系人升级；被工作流主动丢弃的事件不当作传输失败。
 func EnqueueNotificationFailure(db *gorm.DB, event *AlertCurEvent, ruleID int64, channel, target string, sendErr error) error {
 	if db == nil || sendErr == nil || event == nil || ruleID <= 0 {
 		return nil
@@ -258,6 +260,9 @@ func (c DutyConfig) ReminderDuration() time.Duration {
 	}
 	return time.Duration(c.ReminderInterval) * time.Hour
 }
+
+// SyncDutyReminderClock 只在开关/实际间隔变化时调整计时，普通组配置保存不推迟下一次提醒。
+// 新开启即到期；修改间隔从保存时重新计时，并取消旧间隔尚未发送的任务。
 func SyncDutyReminderClock(tx *gorm.DB, g, old DutyGroup) error {
 	if g.Config.HourlyReminder == old.Config.HourlyReminder && g.ID == old.ID && g.Config.ReminderDuration() == old.Config.ReminderDuration() {
 		return nil
@@ -276,6 +281,9 @@ func SyncDutyReminderClock(tx *gorm.DB, g, old DutyGroup) error {
 	}
 	return tx.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "group_id"}}, DoUpdates: clause.Assignments(map[string]interface{}{"next_at": next})}).Create(&DutyReminderClock{GroupID: g.ID, NextAt: next}).Error
 }
+
+// EnqueueDueDutyReminders 以 next_at 条件更新抢占到期时钟，再为组公共渠道创建持久任务。
+// 从当前时刻安排下一次，不补停机期间每个遗漏时段；具体当班人在 worker 发送时再解析。
 func EnqueueDueDutyReminders(db *gorm.DB, now time.Time) error {
 	var clocks []DutyReminderClock
 	if e := db.Where("next_at>0 AND next_at<=?", now.Unix()).Limit(100).Find(&clocks).Error; e != nil {
@@ -320,6 +328,8 @@ func EnqueueDueDutyReminders(db *gorm.DB, now time.Time) error {
 }
 
 // Explicit ownership wins for recovery and transfer; otherwise resolve the live roster.
+// ResolveDutyRecipient 优先级：显式转交目标 → 恢复事件原认领人 → 当前排班。
+// 已认领但未恢复的普通重复通知由上层拦截；这里不自动随交班转走已有认领。
 func ResolveDutyRecipient(db *gorm.DB, g DutyGroup, event *AlertCurEvent, explicit int64) (User, error) {
 	id := explicit
 	if id == 0 && event != nil && event.IsRecovered {

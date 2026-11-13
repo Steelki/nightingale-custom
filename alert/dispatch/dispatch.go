@@ -166,6 +166,8 @@ func (e *Dispatch) reloadTpls() error {
 	return nil
 }
 
+// HandleEventWithNotifyRule 是新版通知规则入口：每条规则使用独立事件副本，先运行工作流，
+// 再按各渠道的级别/时间/标签条件筛选；值班组只在规则级选择一次，传入每个渠道的临时配置。
 func (e *Dispatch) HandleEventWithNotifyRule(eventOrigin *models.AlertCurEvent) {
 
 	if len(eventOrigin.NotifyRuleIds) > 0 {
@@ -647,6 +649,8 @@ func BuildNotifyContext(nctx *ctx.Context, userCache *memsto.UserCacheType, user
 	}, nil
 }
 
+// SendNotifyRuleMessage 渲染模板并选择传输方式：HTTP 入渠道队列，SMTP 有界同步发送，其他走 provider。
+// 发送前再查认领状态，避免事件排队期间已被认领却继续提醒；恢复事件由 ResponseIsClaimed 放行。
 func SendNotifyRuleMessage(ctx *ctx.Context, userCache *memsto.UserCacheType, userGroupCache *memsto.UserGroupCacheType, notifyChannelCache *memsto.NotifyChannelCacheType, configCvalCache *memsto.CvalCache,
 	events []*models.AlertCurEvent, notifyRuleId int64, notifyConfig *models.NotifyConfig, notifyChannel *models.NotifyChannelConfig, messageTemplate *models.MessageTemplate) {
 	if len(events) == 0 {

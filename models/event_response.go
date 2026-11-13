@@ -11,6 +11,8 @@ import (
 
 // EventResponse tracks a native alert episode, independent of changing history row IDs.
 // Cross-severity episode association is deliberately handled separately.
+// 业务关联键为 hash + first_trigger_time（一个告警周期），不是可能变化的历史事件行ID。
+// Version 防并发覆盖；AssignmentVersion 只跟踪负责人变更，使新增评论不会作废待发送的转交通知。
 type EventResponse struct {
 	AssignmentVersion int64  `json:"assignment_version"`
 	ID                int64  `json:"id" gorm:"primaryKey"`
@@ -77,6 +79,9 @@ func ResponseIsClaimed(db *gorm.DB, event *AlertCurEvent) (bool, error) {
 	return row.OwnerID > 0 && !row.Recovered, err
 }
 
+// ChangeEventResponse 把状态变更、操作日志和通知入队放进同一事务。
+// 任何已启用账号可认领未认领事件；取消/转交仅允许当前负责人或管理员。
+// 真正网络发送由提交后的 worker 执行，发送失败不会撤销已经成功的认领。
 func ChangeEventResponse(db *gorm.DB, row *EventResponse, version int64, actor *User, action, content string, target int64) error {
 	if actor == nil || actor.IsDisabled() {
 		return errors.New("账号不可用")

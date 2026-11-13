@@ -55,6 +55,8 @@ func nextDutyShift(c DutyConfig, now time.Time) time.Time {
 }
 
 // PrepareDutyRotation preserves every effective version, even against stale/legacy clients.
+// PrepareDutyRotation 将前端 rotation_change 命令转换为计划版本；保留已生效历史，校验未来调整。
+// 前端不能直接重写历史计划。预览与保存复用此转换，防止预览结果与实际保存采用两套算法。
 func PrepareDutyRotation(g *DutyGroup, old DutyGroup, now time.Time) error {
 	loc, err := time.LoadLocation(g.Config.Timezone)
 	if err != nil {
